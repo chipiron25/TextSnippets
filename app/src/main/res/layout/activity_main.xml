@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F0F4F8">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#1565C0"
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📋 TextSnippets"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Textos rápidos para cualquier teclado"
+                android:textColor="#BBDEFB"
+                android:textSize="13sp"
+                android:layout_marginTop="4dp"/>
+
+        </LinearLayout>
+
+        <!-- Status bar -->
+        <TextView
+            android:id="@+id/tv_accessibility_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#E3F2FD"
+            android:padding="12dp"
+            android:text="Comprobando permisos..."
+            android:textSize="12sp"
+            android:textColor="#1565C0"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Permissions section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="PASO 1 — Permisos"
+            android:textSize="11sp"
+            android:textColor="#888888"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btn_enable_accessibility"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Activar Accesibilidad ⚠️"
+            android:backgroundTint="#1565C0"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btn_overlay_permission"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Permiso de superposición (opcional)"
+            android:backgroundTint="#546E7A"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ℹ️  El servicio de accesibilidad es obligatorio. El permiso de superposición solo se necesita en algunos dispositivos."
+            android:textSize="11sp"
+            android:textColor="#777777"
+            android:layout_marginBottom="20dp"/>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#CCCCCC"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Snippets section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="PASO 2 — Mis textos rápidos"
+            android:textSize="11sp"
+            android:textColor="#888888"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp"/>
+
+        <LinearLayout
+            android:id="@+id/snippets_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"/>
+
+        <Button
+            android:id="@+id/btn_add_snippet"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="＋ Añadir texto rápido"
+            android:backgroundTint="#2E7D32"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:layout_marginTop="12dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Los textos se mostrarán como botones en la ventana flotante cuando actives cualquier campo de texto."
+            android:textSize="11sp"
+            android:textColor="#999999"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="32dp"/>
+
+    </LinearLayout>
+</ScrollView>

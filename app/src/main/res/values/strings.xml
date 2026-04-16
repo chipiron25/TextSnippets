@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TextSnippets</string>
+    <string name="accessibility_service_label">TextSnippets — Textos Rápidos</string>
+    <string name="accessibility_service_description">TextSnippets muestra una ventana flotante con tus textos rápidos cada vez que activas un campo de escritura, permitiéndote insertar texto con un solo toque.</string>
+</resources>
