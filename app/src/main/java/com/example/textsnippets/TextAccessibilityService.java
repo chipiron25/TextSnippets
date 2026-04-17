@@ -161,7 +161,7 @@ public class TextAccessibilityService extends AccessibilityService {
         LinearLayout container = floatingView.findViewById(R.id.buttons_container);
         container.removeAllViews();
 
-        List<String> snippets = SnippetManager.getSnippets(this);
+        List<SnippetManager.Snippet> snippets = SnippetManager.getSnippets(this);
 
         if (snippets.isEmpty()) {
             TextView empty = new TextView(this);
@@ -173,12 +173,10 @@ public class TextAccessibilityService extends AccessibilityService {
             return;
         }
 
-        for (String snippet : snippets) {
+        for (SnippetManager.Snippet snippet : snippets) {
             Button btn = new Button(this);
-            // Show truncated label; full text is in the tag
-            String label = snippet.length() > 35 ? snippet.substring(0, 35) + "…" : snippet;
-            btn.setText(label);
-            btn.setTag(snippet);
+            btn.setText(snippet.label);
+            btn.setTag(snippet.text);
             btn.setTextSize(12f);
             btn.setAllCaps(false);
             btn.setBackgroundColor(0xFF37474F);

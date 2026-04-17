@@ -8,19 +8,38 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Escribe el texto que aparecerá en el botón:"
+        android:text="Etiqueta del botón (texto corto):"
         android:textSize="13sp"
         android:textColor="#555555"
-        android:layout_marginBottom="12dp"/>
+        android:layout_marginBottom="6dp"/>
+
+    <EditText
+        android:id="@+id/et_snippet_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ej: Saludo formal"
+        android:inputType="textCapSentences"
+        android:maxLines="1"
+        android:padding="10dp"
+        android:background="#F5F5F5"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Texto completo a insertar:"
+        android:textSize="13sp"
+        android:textColor="#555555"
+        android:layout_marginBottom="6dp"/>
 
     <EditText
         android:id="@+id/et_snippet_input"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minLines="2"
+        android:minLines="3"
         android:maxLines="6"
         android:gravity="top"
-        android:hint="Ej: Hola, me llamo Juan y..."
+        android:hint="Ej: Estimado cliente, me dirijo a usted para..."
         android:inputType="textMultiLine|textCapSentences"
         android:padding="10dp"
         android:background="#F5F5F5"/>

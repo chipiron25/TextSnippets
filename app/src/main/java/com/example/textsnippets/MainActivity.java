@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,7 +23,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private LinearLayout snippetsContainer;
-    private List<String> snippets = new ArrayList<>();
+    private List<SnippetManager.Snippet> snippets = new ArrayList<>();
     private TextView tvAccessibilityStatus;
 
     @Override
@@ -38,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         snippets = SnippetManager.getSnippets(this);
         renderSnippets();
 
-        findViewById(R.id.btn_add_snippet).setOnClickListener(v -> showAddEditDialog(-1, ""));
+        findViewById(R.id.btn_add_snippet).setOnClickListener(v -> showAddEditDialog(-1, null));
         findViewById(R.id.btn_enable_accessibility).setOnClickListener(v -> openAccessibilitySettings());
         findViewById(R.id.btn_overlay_permission).setOnClickListener(v -> openOverlaySettings());
     }
@@ -49,19 +48,13 @@ public class MainActivity extends AppCompatActivity {
         updateStatusIndicators();
     }
 
-    // -----------------------------------------------------------------------
-    // Status indicators
-    // -----------------------------------------------------------------------
-
     private void updateStatusIndicators() {
         boolean accessibilityOn = isAccessibilityServiceEnabled();
         boolean overlayOn = Settings.canDrawOverlays(this);
-
         tvAccessibilityStatus.setText(
                 "Accesibilidad: " + (accessibilityOn ? "✅ Activo" : "❌ Desactivado") +
                 "   Superposición: " + (overlayOn ? "✅ OK" : "⚠️ Opcional")
         );
-
         Button btnAcc = findViewById(R.id.btn_enable_accessibility);
         btnAcc.setText(accessibilityOn ? "Accesibilidad: ACTIVA ✅" : "Activar Accesibilidad ⚠️");
     }
@@ -78,13 +71,8 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    // -----------------------------------------------------------------------
-    // Snippets rendering
-    // -----------------------------------------------------------------------
-
     private void renderSnippets() {
         snippetsContainer.removeAllViews();
-
         if (snippets.isEmpty()) {
             TextView empty = new TextView(this);
             empty.setText("Aún no has añadido ningún texto rápido.\nPulsa el botón de abajo para empezar.");
@@ -93,49 +81,39 @@ public class MainActivity extends AppCompatActivity {
             snippetsContainer.addView(empty);
             return;
         }
-
         for (int i = 0; i < snippets.size(); i++) {
             final int index = i;
             View item = LayoutInflater.from(this).inflate(R.layout.item_snippet, snippetsContainer, false);
-
+            TextView tvLabel = item.findViewById(R.id.tv_snippet_label);
             TextView tvText = item.findViewById(R.id.tv_snippet_text);
-            tvText.setText((i + 1) + ". " + snippets.get(i));
-
-            item.findViewById(R.id.btn_edit).setOnClickListener(
-                    v -> showAddEditDialog(index, snippets.get(index)));
-            item.findViewById(R.id.btn_delete).setOnClickListener(
-                    v -> confirmDelete(index));
-
+            tvLabel.setText("🔘 " + snippets.get(i).label);
+            tvText.setText(snippets.get(i).text);
+            item.findViewById(R.id.btn_edit).setOnClickListener(v -> showAddEditDialog(index, snippets.get(index)));
+            item.findViewById(R.id.btn_delete).setOnClickListener(v -> confirmDelete(index));
             snippetsContainer.addView(item);
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Add / Edit dialog
-    // -----------------------------------------------------------------------
-
-    private void showAddEditDialog(int index, String existingText) {
+    private void showAddEditDialog(int index, SnippetManager.Snippet existing) {
         boolean isEdit = index >= 0;
-
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_snippet, null);
-        EditText editText = dialogView.findViewById(R.id.et_snippet_input);
-        editText.setText(existingText);
-        editText.setSelection(existingText.length());
-
+        EditText etLabel = dialogView.findViewById(R.id.et_snippet_label);
+        EditText etText = dialogView.findViewById(R.id.et_snippet_input);
+        if (isEdit && existing != null) {
+            etLabel.setText(existing.label);
+            etText.setText(existing.text);
+            etLabel.setSelection(existing.label.length());
+        }
         new AlertDialog.Builder(this)
                 .setTitle(isEdit ? "Editar texto rápido" : "Nuevo texto rápido")
                 .setView(dialogView)
                 .setPositiveButton("Guardar", (d, w) -> {
-                    String text = editText.getText().toString().trim();
-                    if (text.isEmpty()) {
-                        Toast.makeText(this, "El texto no puede estar vacío", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    if (isEdit) {
-                        snippets.set(index, text);
-                    } else {
-                        snippets.add(text);
-                    }
+                    String label = etLabel.getText().toString().trim();
+                    String text = etText.getText().toString().trim();
+                    if (label.isEmpty()) { Toast.makeText(this, "La etiqueta no puede estar vacía", Toast.LENGTH_SHORT).show(); return; }
+                    if (text.isEmpty()) { Toast.makeText(this, "El texto no puede estar vacío", Toast.LENGTH_SHORT).show(); return; }
+                    SnippetManager.Snippet snippet = new SnippetManager.Snippet(label, text);
+                    if (isEdit) { snippets.set(index, snippet); } else { snippets.add(snippet); }
                     SnippetManager.saveSnippets(this, snippets);
                     renderSnippets();
                     Toast.makeText(this, isEdit ? "Guardado ✓" : "Añadido ✓", Toast.LENGTH_SHORT).show();
@@ -147,29 +125,19 @@ public class MainActivity extends AppCompatActivity {
     private void confirmDelete(int index) {
         new AlertDialog.Builder(this)
                 .setTitle("Borrar texto")
-                .setMessage("¿Eliminar «" + snippets.get(index) + "»?")
-                .setPositiveButton("Borrar", (d, w) -> {
-                    snippets.remove(index);
-                    SnippetManager.saveSnippets(this, snippets);
-                    renderSnippets();
-                })
+                .setMessage("¿Eliminar «" + snippets.get(index).label + "»?")
+                .setPositiveButton("Borrar", (d, w) -> { snippets.remove(index); SnippetManager.saveSnippets(this, snippets); renderSnippets(); })
                 .setNegativeButton("Cancelar", null)
                 .show();
     }
 
-    // -----------------------------------------------------------------------
-    // Permission navigation
-    // -----------------------------------------------------------------------
-
     private void openAccessibilitySettings() {
         startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
-        Toast.makeText(this,
-                "Busca 'TextSnippets' y actívalo", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Busca 'TextSnippets' y actívalo", Toast.LENGTH_LONG).show();
     }
 
     private void openOverlaySettings() {
-        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:" + getPackageName()));
+        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
         startActivity(intent);
     }
 }
