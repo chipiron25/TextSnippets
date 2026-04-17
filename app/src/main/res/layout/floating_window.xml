@@ -48,7 +48,6 @@
         android:textSize="13sp"
         android:textColor="#FFFFFF"
         android:backgroundTint="#1565C0"
-        android:allCaps="false"
         android:padding="0dp"/>
 
     <!-- Lista desplegable de botones -->
