@@ -17,6 +17,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.util.List;
@@ -27,15 +28,11 @@ public class TextAccessibilityService extends AccessibilityService {
     private View floatingView;
     private WindowManager.LayoutParams windowParams;
     private boolean isShowing = false;
+    private boolean isExpanded = false;
     private AccessibilityNodeInfo lastFocusedNode = null;
 
-    // For dragging the floating window
     private int dragInitialX, dragInitialY;
     private float dragInitialTouchX, dragInitialTouchY;
-
-    // -----------------------------------------------------------------------
-    // Lifecycle
-    // -----------------------------------------------------------------------
 
     @Override
     public void onServiceConnected() {
@@ -56,14 +53,9 @@ public class TextAccessibilityService extends AccessibilityService {
     @Override
     public void onInterrupt() {}
 
-    // -----------------------------------------------------------------------
-    // Accessibility events
-    // -----------------------------------------------------------------------
-
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         int type = event.getEventType();
-
         if (type == AccessibilityEvent.TYPE_VIEW_FOCUSED) {
             AccessibilityNodeInfo source = event.getSource();
             if (source != null && source.isEditable()) {
@@ -72,28 +64,21 @@ public class TextAccessibilityService extends AccessibilityService {
             }
         } else if (type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
                 || type == AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
-            // Check if there's still any editable field with focus
             AccessibilityNodeInfo root = getRootInActiveWindow();
             if (root != null) {
                 AccessibilityNodeInfo inputFocus = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
                 if (inputFocus == null || !inputFocus.isEditable()) {
-                    // No editable field focused — hide the panel
                     hideFloatingWindow();
                 }
             }
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Floating window management
-    // -----------------------------------------------------------------------
-
     private void inflateFloatingView() {
         floatingView = LayoutInflater.from(this).inflate(R.layout.floating_window, null);
 
-        // Initial window params: bottom-right, above keyboard area
         windowParams = new WindowManager.LayoutParams(
-                dpToPx(220),
+                WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
@@ -102,9 +87,9 @@ public class TextAccessibilityService extends AccessibilityService {
         );
         windowParams.gravity = Gravity.BOTTOM | Gravity.START;
         windowParams.x = dpToPx(8);
-        windowParams.y = dpToPx(280); // above typical keyboard height
+        windowParams.y = dpToPx(280);
 
-        // Drag handle
+        // Drag
         View dragHandle = floatingView.findViewById(R.id.drag_handle);
         dragHandle.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
@@ -115,29 +100,53 @@ public class TextAccessibilityService extends AccessibilityService {
                     dragInitialTouchY = event.getRawY();
                     return true;
                 case MotionEvent.ACTION_MOVE:
-                    windowParams.x = dragInitialX + (int) (event.getRawX() - dragInitialTouchX);
-                    windowParams.y = dragInitialY - (int) (event.getRawY() - dragInitialTouchY);
-                    if (isShowing) {
-                        windowManager.updateViewLayout(floatingView, windowParams);
-                    }
+                    windowParams.x = dragInitialX + (int)(event.getRawX() - dragInitialTouchX);
+                    windowParams.y = dragInitialY - (int)(event.getRawY() - dragInitialTouchY);
+                    if (isShowing) windowManager.updateViewLayout(floatingView, windowParams);
                     return true;
             }
             return false;
         });
 
-        // Close button
+        // Botón "Atajos" — colapsa/expande
+        Button btnToggle = floatingView.findViewById(R.id.btn_toggle);
+        ScrollView scrollView = floatingView.findViewById(R.id.scroll_buttons);
+
+        btnToggle.setOnClickListener(v -> {
+            isExpanded = !isExpanded;
+            if (isExpanded) {
+                refreshButtons();
+                scrollView.setVisibility(View.VISIBLE);
+                btnToggle.setText("▲ Atajos");
+            } else {
+                scrollView.setVisibility(View.GONE);
+                btnToggle.setText("▼ Atajos");
+            }
+            // Forzar redibujado del tamaño en el WindowManager
+            floatingView.post(() -> {
+                if (isShowing) {
+                    try { windowManager.updateViewLayout(floatingView, windowParams); } catch (Exception ignored) {}
+                }
+            });
+        });
+
+        // Cerrar
         floatingView.findViewById(R.id.btn_close).setOnClickListener(v -> hideFloatingWindow());
     }
 
     private void showFloatingWindow() {
-        refreshButtons();
+        // Al mostrar, siempre empieza colapsado
+        isExpanded = false;
+        Button btnToggle = floatingView.findViewById(R.id.btn_toggle);
+        ScrollView scrollView = floatingView.findViewById(R.id.scroll_buttons);
+        btnToggle.setText("▼ Atajos");
+        scrollView.setVisibility(View.GONE);
+
         if (!isShowing && floatingView != null) {
             try {
                 windowManager.addView(floatingView, windowParams);
                 isShowing = true;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) { e.printStackTrace(); }
         }
     }
 
@@ -146,15 +155,10 @@ public class TextAccessibilityService extends AccessibilityService {
             try {
                 windowManager.removeView(floatingView);
                 isShowing = false;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+                isExpanded = false;
+            } catch (Exception e) { e.printStackTrace(); }
         }
     }
-
-    // -----------------------------------------------------------------------
-    // Button population
-    // -----------------------------------------------------------------------
 
     private void refreshButtons() {
         if (floatingView == null) return;
@@ -165,10 +169,10 @@ public class TextAccessibilityService extends AccessibilityService {
 
         if (snippets.isEmpty()) {
             TextView empty = new TextView(this);
-            empty.setText("Sin textos configurados.\nAbre la app para añadirlos.");
+            empty.setText("Sin atajos configurados");
             empty.setTextColor(0xFFCCCCCC);
             empty.setTextSize(11f);
-            empty.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
+            empty.setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6));
             container.addView(empty);
             return;
         }
@@ -177,85 +181,58 @@ public class TextAccessibilityService extends AccessibilityService {
             Button btn = new Button(this);
             btn.setText(snippet.label);
             btn.setTag(snippet.text);
-            btn.setTextSize(12f);
+            btn.setTextSize(11f);
             btn.setAllCaps(false);
             btn.setBackgroundColor(0xFF37474F);
             btn.setTextColor(0xFFFFFFFF);
 
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
+                    dpToPx(32)
             );
-            lp.setMargins(dpToPx(4), dpToPx(3), dpToPx(4), dpToPx(3));
+            lp.setMargins(dpToPx(3), dpToPx(2), dpToPx(3), dpToPx(2));
             btn.setLayoutParams(lp);
-            btn.setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6));
+            btn.setPadding(dpToPx(6), 0, dpToPx(6), 0);
 
             btn.setOnClickListener(v -> {
                 insertText((String) v.getTag());
-                // Visual feedback
                 v.setBackgroundColor(0xFF1B5E20);
                 new Handler(Looper.getMainLooper()).postDelayed(
-                        () -> v.setBackgroundColor(0xFF37474F), 600);
+                        () -> v.setBackgroundColor(0xFF37474F), 500);
             });
 
             container.addView(btn);
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Text injection
-    // -----------------------------------------------------------------------
-
     private void insertText(String text) {
-        // Re-find the focused editable node (more reliable than caching)
         AccessibilityNodeInfo targetNode = null;
         try {
             AccessibilityNodeInfo root = getRootInActiveWindow();
             if (root != null) {
                 AccessibilityNodeInfo focused = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
-                if (focused != null && focused.isEditable()) {
-                    targetNode = focused;
-                }
+                if (focused != null && focused.isEditable()) targetNode = focused;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
 
-        // Fall back to the last known node
-        if (targetNode == null) {
-            targetNode = lastFocusedNode;
-        }
-
+        if (targetNode == null) targetNode = lastFocusedNode;
         if (targetNode == null) return;
 
-        // Primary method: paste via clipboard (inserts at cursor position)
         try {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("snippet", text);
-            clipboard.setPrimaryClip(clip);
+            clipboard.setPrimaryClip(ClipData.newPlainText("snippet", text));
             boolean pasted = targetNode.performAction(AccessibilityNodeInfo.ACTION_PASTE);
-
-            // Fallback: append with ACTION_SET_TEXT
             if (!pasted) {
                 CharSequence current = targetNode.getText();
                 String newText = (current != null ? current.toString() : "") + text;
                 Bundle args = new Bundle();
-                args.putCharSequence(
-                        AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
-                        newText);
+                args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, newText);
                 targetNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
-    // -----------------------------------------------------------------------
-    // Utilities
-    // -----------------------------------------------------------------------
-
     private int dpToPx(int dp) {
-        float density = getResources().getDisplayMetrics().density;
-        return Math.round(dp * density);
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }

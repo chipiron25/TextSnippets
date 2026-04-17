@@ -55,6 +55,7 @@
         android:id="@+id/scroll_buttons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxHeight="240dp"
         android:visibility="gone"
         android:overScrollMode="ifContentScrolls">
 
