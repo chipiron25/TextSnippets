@@ -35,6 +35,12 @@ public class MainActivity extends AppCompatActivity {
         tvAccessibilityStatus = findViewById(R.id.tv_accessibility_status);
 
         snippets = SnippetManager.getSnippets(this);
+        if (snippets.isEmpty()) {
+            snippets.add(new SnippetManager.Snippet("PILAS", "Se cambian pilas a todos los elementos."));
+            snippets.add(new SnippetManager.Snippet("PRUEBAS", "Se prueban saltos e imagenes y todo ok."));
+            snippets.add(new SnippetManager.Snippet("VF2 A VF4", "Se amplia central a Fast4."));
+            SnippetManager.saveSnippets(this, snippets);
+        }
         renderSnippets();
 
         findViewById(R.id.btn_add_snippet).setOnClickListener(v -> showAddEditDialog(-1, null));
